@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0067C5">
+<title>Trident Port™ — From a Bash Script to a Production Toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ─── Reset & NetApp tokens ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* NetApp palette */
+  --na-navy: #001C54;
+  --na-navy-2: #0A2D6E;
+  --na-blue: #0067C5;
+  --na-blue-2: #0080E6;
+  --na-blue-light: #4A9EE0;
+  --na-cyan: #00B5E2;
+  --na-orange: #F37021;
+  --na-amber: #FFA000;
+  --na-green: #00875A;
+  --na-red: #DA291C;
+  --na-light: #F4F7FB;
+  --na-light-2: #EDF2F8;
+  --na-border: #D1DFF0;
+  --na-border-strong: #A6BDDC;
+  --na-text: #1A2B4A;
+  --na-text-2: #2C3E5C;
+  --na-muted: #5F7396;
+  --na-faint: #8B9CB5;
+
+  --shadow-sm: 0 1px 2px rgba(0, 28, 84, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 28, 84, 0.08);
+  --shadow-lg: 0 12px 32px rgba(0, 28, 84, 0.10);
+  --shadow-blue: 0 8px 24px rgba(0, 103, 197, 0.18);
+
+  --maxw: 1200px;
+  --pad-x: clamp(20px, 4.5vw, 60px);
+  --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 22px;
+}
+
+html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--na-light);
+  color: var(--na-text);
+  line-height: 1.55;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 800px 600px at 80% -10%, rgba(0, 103, 197, 0.06), transparent 60%),
+    radial-gradient(ellipse 700px 500px at -10% 30%, rgba(0, 181, 226, 0.04), transparent 60%),
+    var(--na-light);
+  pointer-events: none;
+}
+
+/* ─── Top nav ─── */
+nav.top {
+  position: sticky; top: 0; z-index: 100;
+  padding: 14px var(--pad-x);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid var(--na-border);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700; font-size: 15px;
+  color: var(--na-navy);
+  text-decoration: none;
+}
+.brand-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--na-navy), var(--na-blue));
+  display: grid; place-items: center;
+  font-size: 16px;
+  color: #fff;
+  box-shadow: var(--shadow-blue);
+}
+.nav-links {
+  display: flex; gap: 4px;
+  margin-left: auto;
+  font-size: 13px;
+}
+.nav-links a {
+  color: var(--na-muted);
+  text-decoration: none;
+  padding: 7px 12px;
+  border-radius: 7px;
+  font-weight: 500;
+  transition: color 0.18s, background 0.18s;
+}
+.nav-links a:hover { color: var(--na-navy); background: var(--na-light-2); }
+@media (max-width: 720px) {
+  .nav-links { display: none; }
+}
+
+/* ─── Sections ─── */
+section {
+  padding: clamp(60px, 9vw, 110px) var(--pad-x);
+  max-width: var(--maxw);
+  margin: 0 auto;
+  position: relative;
+  scroll-margin-top: 72px;
+}
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--na-blue);
+  padding: 6px 13px;
+  background: rgba(0, 103, 197, 0.08);
+  border: 1px solid rgba(0, 103, 197, 0.18);
+  border-radius: 999px;
+  margin-bottom: 18px;
+}
+.eyebrow::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--na-blue);
+  box-shadow: 0 0 8px var(--na-blue);
+}
+h2.section-title {
+  font-size: clamp(28px, 4.2vw, 46px);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin-bottom: 14px;
+  color: var(--na-navy);
+}
+.section-subtitle {
+  font-size: clamp(15px, 1.5vw, 18px);
+  color: var(--na-muted);
+  max-width: 680px;
+  margin-bottom: 48px;
+  line-height: 1.6;
+}
+
+/* ─── Hero ─── */
+.hero { padding-top: clamp(60px, 11vw, 130px); padding-bottom: clamp(60px, 9vw, 110px); }
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 60px;
+  align-items: center;
+  max-width: 900px;
+}
+@media (max-width: 880px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 50px; }
+}
+.hero h1 {
+  font-size: clamp(40px, 6.8vw, 76px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: var(--na-navy);
+  margin-bottom: 22px;
+}
+.hero h1 .gradient {
+  background: linear-gradient(135deg, var(--na-blue), var(--na-cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero .tagline {
+  font-size: clamp(17px, 1.8vw, 20px);
+  color: var(--na-muted);
+  margin-bottom: 30px;
+  max-width: 540px;
+  line-height: 1.6;
+}
+.hero .stats {
+  display: flex; gap: 36px; flex-wrap: wrap;
+  margin-top: 36px;
+  padding-top: 30px;
+  border-top: 1px solid var(--na-border);
+}
+.hero .stat .num {
+  font-size: clamp(24px, 2.8vw, 32px);
+  font-weight: 800;
+  color: var(--na-blue);
+  letter-spacing: -0.02em;
+}
+.hero .stat .lbl {
+  font-size: 11px;
+  color: var(--na-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+  font-weight: 600;
+}
+.hero-visual {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  max-width: 460px;
+  margin: 0 auto;
+  display: grid; place-items: center;
+}
+.hero-visual::before {
+  content: '';
+  position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 103, 197, 0.18), transparent 65%);
+  filter: blur(30px);
+  animation: pulse 6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(0.92); opacity: 0.7; }
+  50%      { transform: scale(1.05); opacity: 1; }
+}
+.hero-visual svg { position: relative; width: 100%; height: 100%; }
+
+.cta-row {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  margin-top: 8px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 22px;
+  border-radius: 8px;
+  font-size: 14px; font-weight: 600;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.15s, background 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary {
+  background: var(--na-blue);
+  color: #fff;
+  box-shadow: var(--shadow-blue);
+}
+.btn-primary:hover { background: var(--na-blue-2); box-shadow: 0 12px 32px rgba(0, 103, 197, 0.28); }
+.btn-ghost {
+  background: #fff;
+  color: var(--na-navy);
+  border-color: var(--na-border);
+}
+.btn-ghost:hover { background: var(--na-light-2); border-color: var(--na-border-strong); }
+
+/* ─── Problem cards ─── */
+.prob-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+.prob-card {
+  background: #fff;
+  border: 1px solid var(--na-border);
+  border-radius: var(--r-lg);
+  padding: 28px;
+  transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+  box-shadow: var(--shadow-sm);
+}
+.prob-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--na-blue);
+  box-shadow: var(--shadow-lg);
+}
+.prob-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: grid; place-items: center;
+  font-size: 22px;
+  margin-bottom: 16px;
+}
+.prob-card h3 { font-size: 17px; font-weight: 700; color: var(--na-navy); margin-bottom: 8px; }
+.prob-card p { color: var(--na-muted); font-size: 14px; line-height: 1.6; }
+
+/* ─── Timeline ─── */
+.timeline {
+  position: relative;
+  padding-left: 36px;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 11px; top: 12px; bottom: 12px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--na-blue) 0%, var(--na-border) 100%);
+  border-radius: 2px;
+}
+.tl-item {
+  position: relative;
+  padding-bottom: 38px;
+}
+.tl-item:last-child { padding-bottom: 0; }
+.tl-item::before {
+  content: '';
+  position: absolute;
+  left: -32px; top: 6px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--na-blue);
+  box-shadow: 0 0 0 4px rgba(0, 103, 197, 0.08);
+  transition: all 0.25s;
+}
+.tl-item:hover::before {
+  background: var(--na-blue);
+  box-shadow: 0 0 0 6px rgba(0, 103, 197, 0.15);
+}
+.tl-version {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--na-blue);
+  letter-spacing: 0.05em;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+.tl-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--na-navy);
+  margin-bottom: 7px;
+}
+.tl-desc {
+  color: var(--na-muted);
+  font-size: 14.5px;
+  max-width: 640px;
+  line-height: 1.6;
+}
+
+/* ─── How warm migration works ─── */
+.warm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 18px;
+  margin-top: 36px;
+}
+.warm-card {
+  background: #fff;
+  border: 1px solid var(--na-border);
+  border-radius: var(--r-md);
+  padding: 26px 28px;
+  box-shadow: var(--shadow-sm);
+}
+.warm-icon {
+  width: 44px; height: 44px;
+  border-radius: 11px;
+  display: grid; place-items: center;
+  font-size: 20px; font-weight: 800;
+  margin-bottom: 14px;
+}
+.warm-title {
+  font-size: 18px; font-weight: 700;
+  color: var(--na-navy);
+  margin-bottom: 10px;
+}
+.warm-body { font-size: 14px; line-height: 1.65; color: #3D4F6C; }
+.warm-body p { margin: 0 0 10px; }
+.warm-body p + p { margin-top: 10px; }
+.warm-body ul, .warm-body ol { margin: 0 0 10px; padding-left: 22px; }
+.warm-body li { margin-bottom: 6px; }
+.warm-body code { background: #F4F7FB; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+.warm-body b { color: var(--na-navy); }
+
+/* ─── Architecture grid ─── */
+.arch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+}
+.arch-card {
+  background: #fff;
+  border: 1px solid var(--na-border);
+  border-radius: var(--r-md);
+  padding: 18px 20px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+  box-shadow: var(--shadow-sm);
+}
+.arch-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--na-blue);
+  box-shadow: var(--shadow-md);
+}
+.arch-card .ai {
+  font-size: 22px;
+  width: 40px; height: 40px;
+  border-radius: 9px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.arch-card .arch-text { min-width: 0; }
+.arch-card .at { font-size: 14px; font-weight: 700; color: var(--na-navy); margin-bottom: 3px; }
+.arch-card .ad { font-size: 12px; color: var(--na-muted); line-height: 1.5; }
+.arch-card .aexpl { font-size: 12px; color: #3D4F6C; line-height: 1.55; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--na-border); }
+.arch-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+.at-actor    .ai { background: rgba(0, 135, 90, 0.10);   color: var(--na-green); }
+.at-frontend .ai { background: rgba(0, 103, 197, 0.10);  color: var(--na-blue); }
+.at-backend  .ai { background: rgba(108, 99, 255, 0.10); color: #6C63FF; }
+.at-scripts  .ai { background: rgba(243, 112, 33, 0.10); color: var(--na-orange); }
+.at-state    .ai { background: rgba(0, 181, 226, 0.10);  color: var(--na-cyan); }
+.at-config   .ai { background: rgba(218, 41, 28, 0.10);  color: var(--na-red); }
+.at-infra    .ai { background: rgba(0, 28, 84, 0.08);    color: var(--na-navy); }
+
+/* ─── Flow picker ─── */
+.flow-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+.flow-card {
+  background: #fff;
+  border: 1px solid var(--na-border);
+  border-radius: var(--r-md);
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  box-shadow: var(--shadow-sm);
+}
+.flow-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--na-blue);
+  box-shadow: var(--shadow-md);
+}
+.flow-card.active {
+  background: linear-gradient(135deg, rgba(0, 103, 197, 0.05), rgba(0, 181, 226, 0.03));
+  border-color: var(--na-blue);
+  box-shadow: 0 0 0 2px rgba(0, 103, 197, 0.2), var(--shadow-blue);
+}
+.flow-card .fci { font-size: 22px; margin-bottom: 10px; display: block; }
+.flow-card .fct { font-size: 14px; font-weight: 700; color: var(--na-navy); margin-bottom: 4px; }
+.flow-card .fcm { font-size: 11.5px; color: var(--na-faint); display: flex; gap: 5px; align-items: center; font-weight: 500; }
+.flow-card .fcm::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--na-blue); }
+.flow-card.active .fcm::before { animation: blink 1.5s ease infinite; }
+@keyframes blink { 50% { opacity: 0.3; } }
+
+.flow-category-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--na-faint);
+  margin-bottom: 12px;
+  margin-top: 24px;
+  display: block;
+}
+.flow-category-label:first-child { margin-top: 0; }
+
+/* ─── Step walker ─── */
+.walker {
+  background: #fff;
+  border: 1px solid var(--na-border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  margin-top: 40px;
+}
+.walker-empty {
+  padding: 60px 32px;
+  text-align: center;
+  color: var(--na-faint);
+}
+.walker-empty .we-icon {
+  font-size: 42px;
+  opacity: 0.6;
+  margin-bottom: 14px;
+  display: inline-block;
+  width: 78px; height: 78px;
+  border-radius: 50%;
+  background: var(--na-light-2);
+  line-height: 78px;
+}
+.walker-empty .we-title { font-size: 17px; font-weight: 700; color: var(--na-navy); margin-bottom: 4px; }
+.walker-empty .we-desc { font-size: 13.5px; color: var(--na-muted); }
+
+.walker-header {
+  padding: 18px 26px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--na-border);
+  background: var(--na-light);
+  flex-wrap: wrap;
+}
+.walker-title {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--na-navy);
+  display: flex; align-items: center; gap: 10px;
+  min-width: 0;
+}
+.walker-title .icon { font-size: 22px; }
+.walker-title .text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.walker-progress {
+  display: flex; align-items: center; gap: 5px;
+  flex-wrap: wrap;
+}
+.wpd {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--na-border-strong);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+.wpd.done { background: var(--na-blue-light); }
+.wpd.cur { background: var(--na-blue); transform: scale(1.4); box-shadow: 0 0 0 3px rgba(0, 103, 197, 0.2); }
+
+.walker-body {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  min-height: 380px;
+}
+@media (max-width: 880px) {
+  .walker-body { grid-template-columns: 1fr; }
+  .walker-diagram-side { display: none; }
+}
+
+.walker-content {
+  padding: 28px;
+  display: flex; flex-direction: column;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.step-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--na-faint);
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.step-route {
+  display: flex; align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.route-node {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: 1.5px solid;
+}
+.route-src {
+  background: rgba(0, 103, 197, 0.08);
+  border-color: var(--na-blue);
+  color: var(--na-blue);
+}
+.route-dst {
+  background: rgba(243, 112, 33, 0.08);
+  border-color: var(--na-orange);
+  color: var(--na-orange);
+}
+.route-arrow {
+  color: var(--na-faint);
+  font-size: 18px;
+  position: relative;
+  width: 28px; height: 14px;
+  display: inline-block;
+}
+.route-arrow::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 1.5px;
+  background: linear-gradient(90deg, var(--na-blue), var(--na-orange));
+}
+.route-arrow::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 7px; height: 7px;
+  border-top: 1.5px solid var(--na-orange);
+  border-right: 1.5px solid var(--na-orange);
+}
+
+.step-action {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  background: rgba(0, 103, 197, 0.07);
+  color: var(--na-blue);
+  padding: 6px 11px;
+  border-radius: 6px;
+  align-self: flex-start;
+  border: 1px solid rgba(0, 103, 197, 0.15);
+  font-weight: 500;
+}
+.step-title {
+  font-size: clamp(19px, 2.2vw, 23px);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--na-navy);
+}
+.step-desc {
+  font-size: 14.5px;
+  color: var(--na-text-2);
+  line-height: 1.7;
+}
+.step-data-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--na-faint);
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.step-data-label::before {
+  content: ''; width: 12px; height: 1.5px;
+  background: var(--na-faint);
+}
+.step-data-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  background: var(--na-navy);
+  color: #B8D1F5;
+  padding: 12px 14px;
+  border-radius: 9px;
+  white-space: pre;
+  overflow-x: auto;
+  line-height: 1.65;
+  scrollbar-width: thin;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.walker-diagram-side {
+  background: var(--na-light);
+  border-left: 1px solid var(--na-border);
+  padding: 24px;
+  display: flex; flex-direction: column;
+  gap: 14px;
+  position: relative;
+  min-height: 100%;
+}
+.minidiag-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--na-faint);
+  margin-bottom: 4px;
+}
+.minidiag {
+  position: relative;
+  flex: 1;
+  min-height: 340px;
+}
+.mini-comp {
+  position: absolute;
+  background: #fff;
+  border: 1px solid var(--na-border);
+  border-radius: 7px;
+  padding: 6px 4px;
+  font-size: 9px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.15;
+  color: var(--na-muted);
+  transition: all 0.3s;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px;
+  box-shadow: var(--shadow-sm);
+}
+.mini-comp .mi { font-size: 13px; }
+.mini-comp.touched { color: var(--na-navy); border-color: var(--na-border-strong); }
+.mini-comp.src {
+  background: var(--na-blue);
+  border-color: var(--na-blue);
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 103, 197, 0.2), 0 0 14px rgba(0, 103, 197, 0.35);
+  z-index: 2;
+  transform: scale(1.08);
+}
+.mini-comp.dst {
+  background: var(--na-orange);
+  border-color: var(--na-orange);
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(243, 112, 33, 0.2), 0 0 14px rgba(243, 112, 33, 0.3);
+  z-index: 2;
+  transform: scale(1.08);
+}
+.mini-comp.dim { opacity: 0.4; }
+.minidiag svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.walker-footer {
+  display: flex;
+  gap: 12px;
+  padding: 16px 26px;
+  border-top: 1px solid var(--na-border);
+  background: var(--na-light);
+}
+.walker-footer .nav-btn {
+  flex: 1;
+  padding: 11px 18px;
+  border-radius: 9px;
+  border: 1px solid var(--na-border-strong);
+  background: #fff;
+  color: var(--na-navy);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px;
+}
+.walker-footer .nav-btn:hover:not(:disabled) {
+  background: var(--na-light-2);
+  border-color: var(--na-blue);
+  color: var(--na-blue);
+}
+.walker-footer .nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.walker-footer .nav-btn.primary {
+  background: var(--na-blue);
+  border-color: var(--na-blue);
+  color: #fff;
+  box-shadow: var(--shadow-blue);
+}
+.walker-footer .nav-btn.primary:hover:not(:disabled) {
+  background: var(--na-blue-2);
+}
+
+.swipe-hint {
+  display: none;
+  font-size: 11px;
+  color: var(--na-faint);
+  text-align: center;
+  padding: 8px 12px;
+  background: var(--na-light);
+  border-top: 1px solid var(--na-border);
+}
+
+/* ─── Reveal on scroll ─── */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s, transform 0.6s;
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Footer ─── */
+footer {
+  padding: 50px var(--pad-x) 40px;
+  border-top: 1px solid var(--na-border);
+  text-align: center;
+  color: var(--na-faint);
+  font-size: 13px;
+  margin-top: 60px;
+  background: #fff;
+}
+footer .tagline {
+  font-size: 15px;
+  color: var(--na-blue);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+footer .meta { color: var(--na-muted); }
+
+/* Step content slide transition */
+.walker-content > * { animation: fadeInUp 0.35s ease both; }
+.walker-content > *:nth-child(1) { animation-delay: 0ms; }
+.walker-content > *:nth-child(2) { animation-delay: 40ms; }
+.walker-content > *:nth-child(3) { animation-delay: 80ms; }
+.walker-content > *:nth-child(4) { animation-delay: 120ms; }
+.walker-content > *:nth-child(5) { animation-delay: 160ms; }
+.walker-content > *:nth-child(6) { animation-delay: 200ms; }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Operators 101 ─── */
+.ops-intro-box {
+  background: #fff;
+  border: 1px solid var(--na-border);
+  border-left: 4px solid var(--na-blue);
+  border-radius: var(--r-md);
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  font-size: 14.5px;
+  color: var(--na-text-2);
+  line-height: 1.7;
+  box-shadow: var(--shadow-sm);
+}
+.ops-intro-box strong { color: var(--na-navy); font-weight: 700; }
+.ops-intro-box em { color: var(--na-blue); font-style: italic; font-weight: 500; }
+
+.ops-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.ops-card {
+  background: #fff;
+  border: 1px solid var(--na-border);
+  border-radius: var(--r-lg);
+  padding: 24px 24px 22px;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+}
+.ops-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--na-blue);
+  box-shadow: var(--shadow-md);
+}
+.ops-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--na-blue);
+  letter-spacing: 0.12em;
+  margin-bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ops-num::before {
+  content: '';
+  width: 18px; height: 1.5px;
+  background: var(--na-blue);
+}
+.ops-title {
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--na-navy);
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.ops-card p {
+  color: var(--na-text-2);
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+.ops-card p code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  background: var(--na-light-2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--na-navy);
+  border: 1px solid var(--na-border);
+}
+.ops-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: var(--na-navy);
+  color: #B8D1F5;
+  padding: 11px 13px;
+  border-radius: 7px;
+  margin-top: 12px;
+  line-height: 1.55;
+  overflow-x: auto;
+  white-space: pre;
+}
+.ops-callout {
+  display: flex;
+  gap: 18px;
+  background: linear-gradient(135deg, rgba(243,112,33,0.05), rgba(255,160,0,0.03));
+  border: 1px solid rgba(243,112,33,0.22);
+  border-radius: var(--r-lg);
+  padding: 22px 24px;
+  align-items: flex-start;
+}
+.ops-callout-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--na-orange);
+  flex-shrink: 0;
+  padding: 5px 11px;
+  background: rgba(243,112,33,0.10);
+  border: 1px solid rgba(243,112,33,0.22);
+  border-radius: 6px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+.ops-callout-body {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--na-text-2);
+}
+.ops-callout-body strong { color: var(--na-navy); font-weight: 700; }
+@media (max-width: 600px) {
+  .ops-callout { flex-direction: column; gap: 12px; }
+}
+
+/* ─── Mobile adjustments (functional, not first-class) ─── */
+@media (max-width: 880px) {
+  .swipe-hint { display: block; }
+  .walker-content { padding: 22px 20px; }
+  .walker-header { padding: 14px 18px; gap: 12px; }
+  .walker-footer { padding: 12px 16px; }
+}
+@media (max-width: 480px) {
+  .walker-title { font-size: 14px; }
+  .walker-title .icon { font-size: 18px; }
+  .step-title { font-size: 18px; }
+  .step-desc { font-size: 14px; }
+  .hero .stats { gap: 24px; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--na-light); }
+::-webkit-scrollbar-thumb { background: var(--na-border-strong); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--na-faint); }
+</style>
+</head>
+<body>
+
+<!-- ── Top nav ─────────────────────────────── -->
+<nav class="top">
+  <a href="#hero" class="brand">
+    <div class="brand-icon">⚓</div>
+    <span>Trident Port™</span>
+  </a>
+  <div class="nav-links">
+    <a href="#problem">Problem</a>
+    <a href="#journey">Journey</a>
+    <a href="#how-warm-works">How it works</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#flows">Flows</a>
+  </div>
+</nav>
+
+<!-- ── Hero ────────────────────────────────── -->
+<section class="hero" id="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="eyebrow">Sailing to a Safe Harbor</div>
+      <h1>From a bash script<br>to a <span class="gradient">production toolkit</span>.</h1>
+      <p class="tagline">
+        Any Kubernetes provisioner → NetApp Trident CSI.
+        Warm migration — initial copy, incremental sync, brief orchestrated cutover. Operator-aware, rollback-ready. Built from real customer migrations.
+      </p>
+      <div class="cta-row">
+        <a href="#flows" class="btn btn-primary">Explore the flows →</a>
+        <a href="#journey" class="btn btn-ghost">The story</a>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="num">47</div><div class="lbl">Scripts</div></div>
+        <div class="stat"><div class="num">5</div><div class="lbl">Operators</div></div>
+        <div class="stat"><div class="num">6</div><div class="lbl">Provisioners</div></div>
+        <div class="stat"><div class="num">~30s</div><div class="lbl">Cutover window</div></div>
+      </div>
+    </div>
+    <div class="hero-visual" style="display:none">
+      <svg viewBox="0 0 400 400" fill="none">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#0067C5"/>
+            <stop offset="100%" stop-color="#00B5E2"/>
+          </linearGradient>
+          <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#001C54"/>
+            <stop offset="100%" stop-color="#0067C5"/>
+          </linearGradient>
+          <linearGradient id="gOrange" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#F37021"/>
+            <stop offset="100%" stop-color="#FFA000"/>
+          </linearGradient>
+        </defs>
+        <!-- left cluster (source) -->
+        <circle cx="80" cy="200" r="50" stroke="#001C54" stroke-width="1.2" fill="none" opacity="0.3"/>
+        <circle cx="80" cy="200" r="35" stroke="#001C54" stroke-width="1.2" fill="none" opacity="0.5"/>
+        <circle cx="80" cy="200" r="20" fill="url(#g2)" opacity="0.95"/>
+        <!-- arrows -->
+        <path d="M 120 195 Q 200 160 280 195" stroke="url(#g1)" stroke-width="1.8" fill="none" stroke-dasharray="5 4">
+          <animate attributeName="stroke-dashoffset" from="0" to="-18" dur="1.4s" repeatCount="indefinite"/>
+        </path>
+        <path d="M 120 205 Q 200 240 280 205" stroke="url(#g1)" stroke-width="1.8" fill="none" stroke-dasharray="5 4">
+          <animate attributeName="stroke-dashoffset" from="0" to="-18" dur="1.6s" repeatCount="indefinite"/>
+        </path>
+        <!-- center ship -->
+        <g transform="translate(200 200)">
+          <circle r="48" fill="rgba(0, 103, 197, 0.08)" stroke="url(#g1)" stroke-width="1.8">
+            <animate attributeName="r" values="48;52;48" dur="3s" repeatCount="indefinite"/>
+          </circle>
+          <text y="16" text-anchor="middle" font-size="48" font-family="Inter">⚓</text>
+        </g>
+        <!-- right cluster (dest) -->
+        <circle cx="320" cy="200" r="50" stroke="#0067C5" stroke-width="1.2" fill="none" opacity="0.3"/>
+        <circle cx="320" cy="200" r="35" stroke="#0067C5" stroke-width="1.2" fill="none" opacity="0.5"/>
+        <circle cx="320" cy="200" r="20" fill="url(#g1)" opacity="0.95"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ── Problem ─────────────────────────────── -->
+<section id="problem">
+  <div class="reveal">
+    <div class="eyebrow">The Problem</div>
+    <h2 class="section-title">Migrating PVCs in Kubernetes<br>is a minefield.</h2>
+    <p class="section-subtitle">Customers stuck on legacy storage want NetApp performance, but moving live data across StorageClasses is harder than it sounds. We learned this the hard way.</p>
+  </div>
+  <div class="prob-grid">
+    <div class="prob-card reveal">
+      <div class="prob-icon" style="background:rgba(218,41,28,0.10);color:var(--na-red)">⏱️</div>
+      <h3>Hours of downtime</h3>
+      <p>Stopping every workload, manually copying data with rsync, hoping nothing changes mid-flight. A multi-PVC namespace easily turns into a 6-hour maintenance window. Multiply by 40 namespaces and you start praying.</p>
+    </div>
+    <div class="prob-card reveal">
+      <div class="prob-icon" style="background:rgba(243,112,33,0.10);color:var(--na-orange)">🤖</div>
+      <h3>Operators fight back</h3>
+      <p>PostgreSQL, MongoDB, Dragonfly… they reconcile away your manual changes. Scale a StatefulSet to 0 and the operator scales it back to 3 mid-migration.</p>
+    </div>
+    <div class="prob-card reveal">
+      <div class="prob-icon" style="background:rgba(255,160,0,0.10);color:var(--na-amber)">↩️</div>
+      <h3>No safety net</h3>
+      <p>If anything fails halfway through, you're staring at a half-migrated namespace at 3am. No rollback, no plan B — just a Slack thread and a coffee.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Journey ─────────────────────────────── -->
+<section id="journey">
+  <div class="reveal">
+    <div class="eyebrow">The Journey</div>
+    <h2 class="section-title">From one customer migration<br>to a generic toolkit.</h2>
+    <p class="section-subtitle">Every milestone came from a real customer ticket. The toolkit grew by solving each pain as it appeared in production.</p>
+  </div>
+
+  <div class="timeline">
+    <div class="tl-item reveal">
+      <div class="tl-version">v0.1  ·  Origin</div>
+      <div class="tl-title">The INCIBE migration: 40+ namespaces, 500+ PVCs</div>
+      <div class="tl-desc">Spanish customer needs to move every PVC in their cluster from ONTAP FlexVol to ONTAP Qtree — 40+ namespaces, 500+ PVCs. Manual approach for the first few: stop apps, rsync per PVC, swap PV claimRef, restart. It works for one or two namespaces. At scale, it's a nightmare. This is where the toolkit starts.</div>
+    </div>
+    <div class="tl-item reveal">
+      <div class="tl-version">v0.3  ·  Generalization</div>
+      <div class="tl-title">Any provisioner → any Trident backend</div>
+      <div class="tl-desc">Refactor: source SC and dest SC are now variables, not assumptions. The "FlexVol → Qtree" hardcoding is dead. Add a multi-provisioner lab — local-path, NFS, Longhorn, OpenEBS, Rook/Ceph — so any starting point can be tested end-to-end.</div>
+    </div>
+    <div class="tl-item reveal">
+      <div class="tl-version">v0.5  ·  Operator awareness</div>
+      <div class="tl-title">lib-operator-utils.sh</div>
+      <div class="tl-desc">A PostgreSQL Zalando cluster fought back. Built operator detection via ownerReferences and CR matching. Now handles PostgreSQL, MongoDB Community, MariaDB, RabbitMQ, Dragonfly — pause CRs, migrate, restore.</div>
+    </div>
+    <div class="tl-item reveal">
+      <div class="tl-version">v0.8  ·  Safety net</div>
+      <div class="tl-title">Pre-flight audit + rollback scripts</div>
+      <div class="tl-desc">Production incident: PVC mid-migration, namespace stuck. Added pre-migration-audit.sh with BLOCKER/WARNING gates, and per-session rollback.sh generated as each step executes. Any failure can be unwound.</div>
+    </div>
+    <div class="tl-item reveal">
+      <div class="tl-version">v1.0  ·  Near-zero cutover</div>
+      <div class="tl-title">Live sync via native K8s sidecars</div>
+      <div class="tl-desc">K8s 1.29 shipped native sidecars. Inject an rsync container into running pods — no app restart while syncing, continuous background copy. There's still a brief cutover window (apps must restart to bind the new PV), but it shrinks from hours to roughly 30 seconds. Not zero — just very small.</div>
+    </div>
+    <div class="tl-item reveal">
+      <div class="tl-version">v1.3  ·  Web UI</div>
+      <div class="tl-title">FastAPI backend + React frontend</div>
+      <div class="tl-desc">Customers wanted ops engineers without CLI experience to drive migrations. Built a web layer: SSE-streamed progress, operator-warning modals, session management, license activation.</div>
+    </div>
+    <div class="tl-item reveal">
+      <div class="tl-version">Today  ·  Production toolkit</div>
+      <div class="tl-title">Commercial-grade, licensed, hardened</div>
+      <div class="tl-desc">JWT licensing tied to cluster fingerprint, HMAC-resistant usage ledger, 152/155 passing tests, three tiers (Base / Plus / Premium). Battle-tested at INCIBE — almost every namespace had at least one operator running, and the GitLab namespace held a single 500 GB volume that had to move cleanly. It did.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How warm migration works ─────────────── -->
+<section id="how-warm-works">
+  <div class="reveal">
+    <div class="eyebrow">How it really works</div>
+    <h2 class="section-title">Warm migration —<br>the honest version.</h2>
+    <p class="section-subtitle">There is no live migration between storage provisioners. What there is: a long copy phase while the app keeps writing, an incremental sync that catches deltas, and a brief cutover where pods restart on the new PV. Below is exactly how each piece works and why.</p>
+  </div>
+
+  <div class="warm-grid">
+    <div class="warm-card">
+      <div class="warm-icon" style="background: rgba(0, 103, 197, 0.10); color: var(--na-blue);">①</div>
+      <div class="warm-title">Initial copy</div>
+      <div class="warm-body">
+        <p>Source PVCs are mounted read-write (your app keeps using them). A Kubernetes Job mounts the same PVCs in a copy pod and streams data to the destination:</p>
+        <ul>
+          <li><b>Filesystem PVCs</b> → rsync (preserves perms, ACLs, sparse files, hardlinks).</li>
+          <li><b>Block PVCs</b> → dd from /dev/source to /dev/dest + SHA-256 spot-check.</li>
+        </ul>
+        <p>This phase takes minutes to hours depending on data volume. The app sees zero impact — it does not even know this is happening.</p>
+      </div>
+    </div>
+
+    <div class="warm-card">
+      <div class="warm-icon" style="background: rgba(0, 181, 226, 0.10); color: var(--na-cyan);">②</div>
+      <div class="warm-title">Incremental sync — two flavors</div>
+      <div class="warm-body">
+        <p>While the initial copy ran, the app kept writing. Deltas need to be caught up before cutover. There are two strategies, picked per workload:</p>
+        <ul>
+          <li><b>Sidecar mode (default).</b> A <code>tp-rsync</code> sidecar container is injected into the live pod. It mounts both PVCs and loops rsync every 30s. Used when the workload owner accepts a pod restart to inject the sidecar (most stateful apps).</li>
+          <li><b>External pod mode.</b> A standalone rsync pod mounts both PVCs in <i>ReadOnlyMany</i> for source (or shares the volume in RWX). Used when the workload <b>cannot be patched</b>: immutable operators, ReadOnlyRootFilesystem, security policies blocking sidecars, or read-mostly workloads where injecting a sidecar would be more disruptive than running externally.</li>
+        </ul>
+        <p>Both modes converge on the same goal: keep the destination PVC within seconds of the source until the operator clicks cutover.</p>
+      </div>
+    </div>
+
+    <div class="warm-card">
+      <div class="warm-icon" style="background: rgba(243, 112, 33, 0.10); color: var(--na-orange);">③</div>
+      <div class="warm-title">What gets scaled — and why</div>
+      <div class="warm-body">
+        <p>The brief downtime window exists for one reason: a Kubernetes PVC binding cannot change while a pod is using it. So <b>something has to stop</b>. What stops depends on the workload kind:</p>
+        <ul>
+          <li><b>Deployment / ReplicaSet</b> → scaled to <code>replicas: 0</code>, PV swapped, scaled back up. The Deployment is the source of truth; this is safe.</li>
+          <li><b>StatefulSet</b> → scaled to 0, but we use <b>PV-swap</b>, NOT JSON-patching the VolumeClaimTemplate. STS reconciles new pods that bind the swapped PV by name. Safer than mutating the template.</li>
+          <li><b>StatefulSet owned by an operator</b> (MongoDB, PostgreSQL Zalando, MariaDB, RabbitMQ, Dragonfly) → the <b>operator is scaled to 0 first</b>, then the STS, then the swap, then the operator is restored. If we scaled the STS without pausing the operator, the operator would fight us and recreate pods on the wrong PVC.</li>
+        </ul>
+        <p><b>What is never scaled:</b> the Kubernetes API, kubelet, CSI drivers, Trident itself, ONTAP. Only the workload pods using the PVC.</p>
+        <p><b>Cases where this does not work cleanly:</b></p>
+        <ul>
+          <li>DaemonSets writing to the PVC (rare, but no clean scale-to-0 — handled manually).</li>
+          <li>Operators not in our supported list — the user is warned at preflight and given a manual pause hook.</li>
+          <li>Workloads with anti-affinity rules that prevent rescheduling on the same node — the cutover window stretches until the scheduler finds a slot.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warm-card">
+      <div class="warm-icon" style="background: rgba(0, 28, 84, 0.08); color: var(--na-navy);">④</div>
+      <div class="warm-title">The cutover window</div>
+      <div class="warm-body">
+        <p>Sequence, end-to-end, typically 30–60 seconds:</p>
+        <ol>
+          <li>Operator (if any) → scale to 0.</li>
+          <li>Workload → scale to 0. Pods terminate, PVCs released.</li>
+          <li>Final rsync — flushes the last delta (usually KBs).</li>
+          <li>PV.claimRef patched: the destination PV now claims the original PVC name.</li>
+          <li>Original PVC deleted; the rebind happens atomically.</li>
+          <li>Workload → scaled back up. Pods bind the new PV by name and start.</li>
+          <li>Operator → restored.</li>
+        </ol>
+        <p>The downtime is real but bounded and measured per migration. If anything fails between step 2 and step 5, <code>rollback.sh</code> generated at planning time restores the original state.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Architecture ────────────────────────── -->
+<section id="architecture">
+  <div class="reveal">
+    <div class="eyebrow">The Architecture</div>
+    <h2 class="section-title">Fifteen components.<br>One mission.</h2>
+    <p class="section-subtitle">Each box is a real piece of the toolkit — a script file, a service, or a system component. Jump to <a href="#flows" style="color:var(--na-blue);font-weight:600">the flows</a> below to see how they collaborate.</p>
+  </div>
+
+  <div class="arch-grid" id="arch-grid"></div>
+</section>
+
+<!-- ── Flows ───────────────────────────────── -->
+<section id="flows">
+  <div class="reveal">
+    <div class="eyebrow">The Flows</div>
+    <h2 class="section-title">Pick a scenario.<br>Walk through it.</h2>
+    <p class="section-subtitle">Ten end-to-end flows covering migration, management, and setup. Each step shows exactly which component talks to which, and the payload that crosses the wire.</p>
+  </div>
+
+  <div id="flow-picker"></div>
+
+  <div class="walker" id="walker">
+    <div class="walker-empty" id="walker-empty">
+      <div class="we-icon">⚓</div>
+      <div class="we-title">Pick a flow above</div>
+      <div class="we-desc">Step through it — the component map will light up to show what talks to what.</div>
+    </div>
+    <div id="walker-active" style="display:none">
+      <div class="walker-header">
+        <div class="walker-title">
+          <span class="icon" id="wkr-icon"></span>
+          <span class="text" id="wkr-title-text"></span>
+        </div>
+        <div class="walker-progress" id="wkr-progress"></div>
+      </div>
+      <div class="walker-body">
+        <div class="walker-content" id="wkr-content"></div>
+        <div class="walker-diagram-side">
+          <div class="minidiag-title">Component map</div>
+          <div class="minidiag" id="minidiag"></div>
+        </div>
+      </div>
+      <div class="swipe-hint">← Swipe to navigate steps →</div>
+      <div class="walker-footer">
+        <button class="nav-btn" id="btn-prev">← Previous</button>
+        <button class="nav-btn primary" id="btn-next">Next →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="tagline">Trident Port™ — Sailing to a Safe Harbor</div>
+  <div class="meta">Built by Carlos Alzaga · Any Kubernetes provisioner → NetApp Trident CSI</div>
+</footer>
+
+<script>
+const COMPONENTS = {
+  user:         { label: "User",            sub: "Admin / Engineer",                icon: "👤", type: "actor",    desc: "The operator running the migration. Triggers actions from CLI or Web UI and approves the cutover gate.",                                            mini: { x: 4,  y: 10, w: 22, h: 14 } },
+  cli_make:     { label: "CLI / Makefile",  sub: "make targets",                    icon: "⌨️", type: "actor",    desc: "Entry point for power users. `make migrate`, `make validate`, `make update-apps` wrap the underlying scripts with safe defaults.",                  mini: { x: 4,  y: 36, w: 22, h: 14 } },
+  web_frontend: { label: "Web Frontend",    sub: "React · Vite · Tailwind",         icon: "🖥️", type: "frontend", desc: "React SPA. NetApp light theme. Streams logs over SSE, shows migration cards, live-sync lag, plan preview before apply.",                              mini: { x: 30, y: 10, w: 22, h: 14 } },
+  web_backend:  { label: "Web Backend",     sub: "FastAPI :8888 · SSE",             icon: "⚡", type: "backend",  desc: "FastAPI on :8888. Spawns scripts as subprocesses, streams stdout via Server-Sent Events, persists state in tracking/.",                              mini: { x: 30, y: 36, w: 22, h: 14 } },
+  lib_utils:    { label: "Lib Utilities",   sub: "lib-session · operator · ontap",  icon: "🔧", type: "scripts",  desc: "Shared bash libraries. Session lifecycle, operator detection/pause logic, ONTAP REST helpers. Sourced by every action script.",                       mini: { x: 30, y: 60, w: 22, h: 11 } },
+  env_config:   { label: ".env Config",     sub: "ONTAP creds · SC names",          icon: "⚙️", type: "config",   desc: "Single source of truth for cluster + storage settings. ONTAP mgmt LIF, SVM, source/dest StorageClass, dest suffix. Generated by configure-environment.sh.", mini: { x: 30, y: 75, w: 22, h: 10 } },
+  tracking:     { label: "Tracking / State",sub: "sessions/ · rollback.sh",         icon: "📂", type: "state",    desc: "Per-migration session directory. plan.txt, references.env, log/, and a generated rollback.sh that undoes every step taken.",                          mini: { x: 30, y: 88, w: 22, h: 9 } },
+  pre_flight:   { label: "Pre-flight",      sub: "audit · check-requirements",      icon: "🔍", type: "scripts",  desc: "Read-only. Inventories PVCs, detects Block/FS, checks ONTAP space, ETA, node resources, operators in scope. Aborts on blockers — never writes.",       mini: { x: 56, y: 6,  w: 22, h: 11 } },
+  migration:    { label: "Migration",       sub: "migrate-batch · auto-migrate",    icon: "🚀", type: "scripts",  desc: "The copy phase. Creates dest PVCs, launches rsync (Filesystem) or dd (Block) pods, watches them to completion, retries on transient errors.",         mini: { x: 56, y: 20, w: 22, h: 11 } },
+  validation:   { label: "Validation",      sub: "validate-migrations",             icon: "✅", type: "scripts",  desc: "Integrity gate. SHA-256 spot-check on a sample of files (or full hash if requested). Blocks cutover if any PVC fails. Generates a report.",            mini: { x: 56, y: 34, w: 22, h: 11 } },
+  cutover:      { label: "Cutover",         sub: "update-apps · rollback",          icon: "⚓", type: "scripts",  desc: "The brief downtime window. Scales workloads down, runs final delta sync, swaps PV.claimRef, scales back up. ~30–60s end-to-end.",                    mini: { x: 56, y: 48, w: 22, h: 11 } },
+  live_sync:    { label: "Live Sync",       sub: "sidecar · external pod",          icon: "🔄", type: "scripts",  desc: "Optional warm-migration mode. Injects an rsync sidecar (or runs an external pod for read-only/blocked workloads) that re-syncs deltas every 30s until cutover.", mini: { x: 56, y: 62, w: 22, h: 11 } },
+  cleanup:      { label: "Cleanup",         sub: "cleanup-origin-pvcs",             icon: "🧹", type: "scripts",  desc: "Post-success housekeeping. Drops the original PVCs/PVs, removes orphan qtrees, frees up source storage. Guarded — requires explicit confirmation.",   mini: { x: 56, y: 76, w: 22, h: 11 } },
+  kubernetes:   { label: "Kubernetes",      sub: "Pods · PVCs · Jobs",              icon: "☸️", type: "infra",    desc: "The substrate. Every action is a kubectl call or Job. Trident Port stays declarative — no privileged access beyond what kubeconfig grants.",            mini: { x: 82, y: 26, w: 14, h: 14 } },
+  ontap:        { label: "ONTAP",           sub: "Trident · any backend",           icon: "💾", type: "infra",    desc: "Destination. Any Trident backend: ontap-nas FlexVol, ontap-nas-economy Qtree, ontap-san, ontap-san-economy. The toolkit is provisioner-agnostic on both ends.", mini: { x: 82, y: 58, w: 14, h: 14 } }
+};
+
+const FLOWS_DATA = {
+  categories: [
+    {
+      id: "migration", label: "Migration",
+      flows: [
+        {
+          id: "auto-migrate-web", label: "Auto-Migration (Web UI)", icon: "⚡",
+          steps: [
+            { from: "user", to: "web_frontend", label: "open Auto-Migration page",
+              title: "User selects what to migrate",
+              desc: "From the Auto-Migration page, the user picks a namespace, source StorageClass, destination StorageClass, and optionally the specific PVCs to include. Defaults auto-detect everything in the namespace.",
+              data: "namespace = my-app\nsource_sc = nfs-legacy\ndest_sc   = netapp-nas\nsuffix    = -new\npvcs      = [auto-detect]" },
+            { from: "web_frontend", to: "web_backend", label: "POST /api/auto-migrate",
+              title: "Frontend submits the migration",
+              desc: "The React form serializes the request and POSTs it. The backend creates an in-memory MigrationRequest record, assigns a UUID, and begins async orchestration. Frontend immediately starts an SSE subscription for progress.",
+              data: "POST /api/auto-migrate\n{\n  namespace, source_sc,\n  dest_sc, pvcs[]\n}\n→ { migration_id: 'm-abc123' }" },
+            { from: "web_backend", to: "pre_flight", label: "spawn audit + operator-detect",
+              title: "Pre-flight audit runs",
+              desc: "Backend shells out to pre-migration-audit.sh and operator-pre-migrate.sh --detect. These check Trident version, SC existence, storage capacity, running workloads, and detect any operator CRs that own pods in the namespace.",
+              data: "pre-migration-audit.sh --ns my-app\noperator-pre-migrate.sh --detect\n  → reads ownerReferences\n  → matches against known CRDs" },
+            { from: "pre_flight", to: "web_backend", label: "audit results + operator list",
+              title: "BLOCKER / WARNING / OK + operators",
+              desc: "Scripts return structured JSON: BLOCKERs abort the migration, WARNINGs surface to the user, OKs are silent. Any detected operators (with type and CR name) trigger the OperatorWarningModal.",
+              data: "[OK]      Trident 24.02 compatible\n[OK]      SC netapp-nas exists\n[WARNING] 3 pods running\n[OPERATOR] postgres-cluster\n           type: zalando" },
+            { from: "web_backend", to: "web_frontend", label: "SSE: audit_complete",
+              title: "Frontend shows confirm modal",
+              desc: "Backend streams the audit results back via Server-Sent Events. The frontend renders the audit report and, if operators were detected, opens the OperatorWarningModal explaining what scaling action will be taken.",
+              data: "event: audit_complete\ndata: {\n  warnings: [...],\n  operators: [{\n    type: 'postgres',\n    cr: 'postgres-cluster',\n    action: 'numberOfInstances=0'\n  }]\n}" },
+            { from: "web_backend", to: "migration", label: "migrate-batch.sh",
+              title: "Migration jobs spin up",
+              desc: "After user confirms, backend first pauses operator CRs (--scale-down), then invokes migrate-batch.sh. The script generates a Job manifest per PVC and applies it. Each Job runs rsync mounting source (RO) and dest (RW) PVCs.",
+              data: "# pause operators first\noperator-pre-migrate.sh --scale-down\n# then run migration\nmigrate-batch.sh\n  NAMESPACE=my-app\n  SOURCE_SC=nfs-legacy\n  DEST_SC=netapp-nas" },
+            { from: "migration", to: "kubernetes", label: "kubectl apply -f migrate-*.yaml",
+              title: "K8s creates the rsync jobs",
+              desc: "Each PVC gets a Job named tp-migrate-<pvc>. The pod template mounts /source from the original PVC (RO) and /dest from the new PVC (RW), then runs rsync -aHAXv. Job completes with exit 0 when data is fully copied.",
+              data: "Job: tp-migrate-data-pvc\n  containers: [rsync]\n  mounts:\n    /source ← data-pvc (RO)\n    /dest   ← data-pvc-new (RW)\n  cmd: rsync -aHAXv /source/ /dest/" },
+            { from: "web_backend", to: "validation", label: "validate-migrations.sh",
+              title: "Checksum verification",
+              desc: "Once all migration Jobs hit Succeeded, validate-migrations.sh runs rsync --checksum --dry-run between source and dest. Any non-zero delta blocks cutover. Zero delta means data is byte-identical.",
+              data: "rsync --checksum --dry-run\n  source: /source-pvc/\n  dest:   /dest-pvc/\n→ delta = 0 bytes ✓\n→ checksums match ✓" },
+            { from: "web_backend", to: "cutover", label: "update-apps-to-qtree.sh",
+              title: "Cutover (after user confirm)",
+              desc: "User clicks Confirm Cutover. Script scales down all workloads, patches each PV's claimRef to point at the new PVC (Deployments: JSON patch; StatefulSets: PV-swap), then scales workloads back up.",
+              data: "update-apps-to-qtree.sh\n  --namespace my-app\n  --suffix -new\n→ scale down workloads\n→ patch PV.claimRef → new PVC\n→ scale up + restore operators" },
+            { from: "cutover", to: "kubernetes", label: "patch PV.claimRef, scale workloads",
+              title: "Apps restart on new storage",
+              desc: "Each PV is repointed to its new PVC. StatefulSets use the PV-swap method. Workloads restart pointing to ONTAP. Operator CRs are unpaused last so they reconcile against the new PVCs.",
+              data: "kubectl patch pv <name> -p\n  '{\"spec\":{\"claimRef\":\n    {\"name\":\"data-pvc-new\"}}}'\nkubectl scale deploy --replicas=3\nkubectl patch postgrescluster\n  spec.numberOfInstances=3" },
+            { from: "cutover", to: "tracking", label: "rollback-NAMESPACE.sh written",
+              title: "Rollback script generated",
+              desc: "As each cutover step runs, its inverse operation is appended to tracking/sessions/<id>/rollback-NAMESPACE.sh. The script grows in real time and can be executed at any point to fully undo the migration.",
+              data: "tracking/sessions/abc/\n  rollback-my-app.sh:\n    # undo PV patches\n    # restore replicas\n    # unpause operators\n    # delete dest PVCs" }
+          ]
+        },
+        {
+          id: "cli-manual", label: "Manual Migration (CLI)", icon: "⌨️",
+          steps: [
+            { from: "user", to: "cli_make", label: "make configure",
+              title: "Interactive setup wizard",
+              desc: "User runs `make configure` which launches configure-environment.sh. The wizard prompts for ONTAP credentials, StorageClass names, destination suffix, and optional flags.",
+              data: "make configure\n→ bash scripts/configure-environment.sh" },
+            { from: "cli_make", to: "env_config", label: "write .env",
+              title: ".env at repo root",
+              desc: "All parameters are persisted to .env. Every subsequent make target sources this file before invoking its underlying script — single source of truth for configuration.",
+              data: ".env:\nONTAP_MGMT_IP=192.168.122.11\nONTAP_USERNAME=admin\nSOURCE_SC=nfs-legacy\nDEST_SC=netapp-nas\nDEST_SUFFIX=-new" },
+            { from: "user", to: "cli_make", label: "make audit NAMESPACE=ns",
+              title: "Pre-flight check",
+              desc: "Before migrating, user runs `make audit` to surface any blockers or warnings. Exits non-zero on any BLOCKER so CI/CD can fail fast.",
+              data: "make audit NAMESPACE=my-app" },
+            { from: "cli_make", to: "pre_flight", label: "pre-migration-audit.sh",
+              title: "Read-only safety check",
+              desc: "Verifies Trident health, source/dest SC existence, storage capacity, running batch jobs, operator presence. No cluster writes.",
+              data: "→ [OK]  Trident v24.02\n→ [OK]  SC netapp-nas exists\n→ [OK]  Dest aggregate has 8.5 TiB free\n→ 0 BLOCKERS, 0 WARNINGS" },
+            { from: "user", to: "cli_make", label: "make migrate-batch NAMESPACE=ns",
+              title: "Kick off the migration",
+              desc: "Runs migrate-batch.sh for all PVCs in the namespace. .env values are passed through. Progress streams to the terminal.",
+              data: "make migrate-batch NAMESPACE=my-app" },
+            { from: "cli_make", to: "migration", label: "migrate-batch.sh",
+              title: "Job orchestrator",
+              desc: "Scales down workloads, generates a Job manifest per PVC, applies them, and tails the Jobs until all reach Succeeded. Failed Jobs abort the run and trigger rollback.",
+              data: "migrate-batch.sh\n  NAMESPACE=my-app\n  SOURCE_SC=nfs-legacy\n  DEST_SC=netapp-nas" },
+            { from: "migration", to: "kubernetes", label: "K8s Jobs per PVC",
+              title: "Parallel rsync per PVC",
+              desc: "Each PVC gets a Job (tp-migrate-<pvc>) running rsync with full attribute preservation. K8s schedules them across available nodes.",
+              data: "Job: tp-migrate-data-pvc\nJob: tp-migrate-config-pvc\n→ rsync -aHAXv /source/ /dest/\n→ exit 0 → Succeeded" },
+            { from: "user", to: "cli_make", label: "make validate + update-apps",
+              title: "Validate then cut over",
+              desc: "User runs `make validate`, then `make update-apps-dry` for a preview, finally `make update-apps`. Each prompts for explicit confirmation.",
+              data: "make validate    NAMESPACE=my-app\nmake update-apps-dry NAMESPACE=my-app\nmake update-apps NAMESPACE=my-app" },
+            { from: "cli_make", to: "cutover", label: "update-apps-to-qtree.sh",
+              title: "PV swap + workload restart",
+              desc: "Stops workloads, swaps PV claimRef per pair, scales workloads back up. Rollback script is written incrementally throughout.",
+              data: "update-apps-to-qtree.sh\n  --namespace my-app\n  --suffix -new\n→ rollback-my-app.sh written" }
+          ]
+        },
+        {
+          id: "cli-tui", label: "Migration via TUI", icon: "📺",
+          steps: [
+            { from: "user", to: "cli_make", label: "make migrate-tui",
+              title: "Launch the interactive TUI",
+              desc: "User runs `make migrate-tui` (or directly `bash scripts/migrate-tui.sh`). A whiptail-based menu opens in the terminal — useful for engineers who want guidance without remembering every make target.",
+              data: "make migrate-tui\n→ bash scripts/migrate-tui.sh" },
+            { from: "cli_make", to: "user", label: "main menu (whiptail)",
+              title: "Pick what to do",
+              desc: "The TUI shows a menu: New migration, View sessions, Resume blocked session, Quit. Arrow keys to navigate, Enter to select. No prior knowledge of the make targets required.",
+              data: "┌─ Trident Port™ — TUI ─────┐\n│                            │\n│  > New migration           │\n│    View sessions           │\n│    Resume blocked session  │\n│    Quit                    │\n│                            │\n└────────────────────────────┘" },
+            { from: "user", to: "cli_make", label: "select 'New migration'",
+              title: "Wizard walks you through it",
+              desc: "The TUI lists namespaces that have PVCs, then source/dest StorageClasses, then the specific PVCs in the chosen namespace. Each step is a list with checkbox/radio navigation.",
+              data: "namespace? [my-app]\nsource SC? [nfs-legacy]\ndest SC?   [netapp-nas]\nPVCs?      [✓] data-pvc\n           [✓] config-pvc" },
+            { from: "cli_make", to: "pre_flight", label: "run audit first",
+              title: "Same audit, friendlier surface",
+              desc: "TUI calls pre-migration-audit.sh internally and renders results in colored boxes. Blockers prevent continuing. User can abort and go fix things before retrying.",
+              data: "→ [OK]      Trident healthy\n→ [WARNING] 3 pods running\n→ Continue? [Yes/No]" },
+            { from: "cli_make", to: "migration", label: "invoke migrate-batch.sh",
+              title: "Same scripts, different surface",
+              desc: "The TUI is a wrapper — under the hood it invokes exactly the same scripts as the plain make targets. Progress is shown in a live-updating box with per-PVC status.",
+              data: "Migrating data-pvc...   ✓\nMigrating config-pvc... ✓\nValidate next? [Yes/No]" },
+            { from: "cli_make", to: "tracking", label: "session recorded",
+              title: "Same tracking as auto-migrate",
+              desc: "The TUI uses lib-session.sh to create a session directory under tracking/sessions/<id>/. The session can later be resumed from the TUI's 'View sessions' option or from the web UI.",
+              data: "tracking/sessions/abc/\n  STATUS=migrated\n  rollback-my-app.sh\n  logs/" }
+          ]
+        },
+        {
+          id: "live-sync", label: "Live Sync (Near-Zero Cutover)", icon: "🔄",
+          steps: [
+            { from: "user", to: "web_frontend", label: "open Live Sync page",
+              title: "User picks PVCs to sync",
+              desc: "From the Live Sync page, user selects namespace and PVC pairs (source:dest). The sidecar method requires K8s ≥1.29 for native sidecar lifecycle.",
+              data: "namespace = my-app\npvcs:\n  data-pvc → data-pvc-new\n  config-pvc → config-pvc-new\nmethod    = native-sidecar" },
+            { from: "web_frontend", to: "web_backend", label: "POST /api/live-sync",
+              title: "Backend creates session",
+              desc: "Backend assigns a session ID, creates tracking/sessions/<id>/, returns the ID. Frontend subscribes to /api/live-sync/<id> for live lag metrics.",
+              data: "POST /api/live-sync\n{ namespace, pvcs[],\n  method: 'sidecar' }\n← { session_id: 'ls-abc123' }" },
+            { from: "web_backend", to: "live_sync", label: "live-sync-start.sh",
+              title: "Inject the rsync sidecar",
+              desc: "Calls live-sync-start.sh which injects a native K8s sidecar (initContainer with restartPolicy: Always) into every pod that mounts a target PVC. No app restart — pods keep serving traffic.",
+              data: "live-sync-start.sh\n  --namespace my-app\n  --session-id ls-abc123\n  --pvcs data-pvc:data-pvc-new" },
+            { from: "live_sync", to: "kubernetes", label: "patch pods → add tp-rsync",
+              title: "Sidecar lives next to the app",
+              desc: "Each affected pod is patched to add a tp-rsync container that mounts both source and dest PVCs. The container runs rsync in a loop at a configurable interval (default 30s).",
+              data: "kubectl patch pod <name>\n  --type=json\n  -p '[{\"op\":\"add\",\n    \"path\":\"/spec/initContainers/-\",\n    \"value\":{\n      \"name\":\"tp-rsync\",\n      \"restartPolicy\":\"Always\",\n      ...\n    }}]'" },
+            { from: "live_sync", to: "tracking", label: "live-sync.env",
+              title: "Session state persisted",
+              desc: "Session metadata — bytes-in-flight, last-sync timestamp, status — is written to tracking/sessions/<id>/live-sync.env. Backend polls this for the dashboard.",
+              data: "STATUS=syncing\nLAST_DELTA_BYTES=2048\nLAST_SYNC=2026-05-13T10:32:01Z\nSYNC_INTERVAL=30s" },
+            { from: "user", to: "web_frontend", label: "monitor lag → Cutover",
+              title: "User waits for minimal lag",
+              desc: "Dashboard polls /api/live-sync/<id> showing live lag per pair. When lag stabilizes to a small delta, the Cutover button activates. A confirm dialog warns of a brief cutover window (~30s) — apps will restart on new storage. This is warm migration, not live migration: there will be a short downtime.",
+              data: "GET /api/live-sync/ls-abc123\n→ lag_bytes: 128\n→ last_sync: 10s ago\n→ status: syncing" },
+            { from: "web_backend", to: "live_sync", label: "live-sync-cutover.sh",
+              title: "Cutover window opens",
+              desc: "Runs final delta rsync, scales workloads to 0 for the brief cutover window, swaps PV claimRefs, scales back up. The sidecar is removed during this phase.",
+              data: "live-sync-cutover.sh\n  --session ls-abc123\n→ final rsync --checksum\n→ scale down (brief)\n→ PV claimRef swap\n→ scale up immediately" },
+            { from: "live_sync", to: "kubernetes", label: "final sync + PV swap",
+              title: "Apps restart on ONTAP",
+              desc: "Sidecar removed, final rsync flushes remaining delta, PVs atomically swapped, pods restart. The cutover window is brief but real — pods do have to restart to bind the new PV. Typically ~30 seconds end-to-end.",
+              data: "→ remove tp-rsync sidecar\n→ rsync final flush\n→ patch PV.claimRef → *-new\n→ scale deploy --replicas=3\n✓ pods Running on new storage" }
+          ]
+        },
+      ]
+    },
+    {
+      id: "management", label: "Management",
+      flows: [
+        {
+          id: "preflight-audit", label: "Pre-flight Audit", icon: "🔍",
+          steps: [
+            { from: "user", to: "web_frontend", label: "Cluster Explorer → Audit",
+              title: "User picks a namespace",
+              desc: "User navigates to Cluster Explorer, browses namespaces and PVCs, then clicks Run Audit on a target namespace.",
+              data: "namespace = my-app" },
+            { from: "web_frontend", to: "web_backend", label: "GET /api/audit",
+              title: "Frontend requests audit",
+              desc: "Frontend issues two parallel GETs: /api/audit for general checks and /api/audit/operators for operator-specific analysis.",
+              data: "GET /api/audit?namespace=my-app\nGET /api/audit/operators?namespace=my-app" },
+            { from: "web_backend", to: "pre_flight", label: "pre-migration-audit.sh --dry-run",
+              title: "Strictly read-only",
+              desc: "Spawns pre-migration-audit.sh in dry-run mode. Checks Trident version, SC existence, capacity, running workloads, RBAC, operator CRs. Zero cluster writes.",
+              data: "pre-migration-audit.sh\n  --namespace my-app\n  --dry-run\noperator-pre-migrate.sh\n  --detect" },
+            { from: "pre_flight", to: "kubernetes", label: "kubectl get (read-only)",
+              title: "Inspect cluster state",
+              desc: "Reads PVCs, PVs, workload specs, operator CRs, node capacity. No write operations issued.",
+              data: "kubectl get pvc -o json\nkubectl get pv -o json\nkubectl get postgrescluster\nkubectl top nodes" },
+            { from: "pre_flight", to: "web_backend", label: "structured results",
+              title: "BLOCKER / WARNING / OK + operators",
+              desc: "Returns JSON with blockers, warnings, ok items, plus any detected operators. Backend forwards this to frontend.",
+              data: "{\n  blockers: [],\n  warnings: ['3 pods running'],\n  ok: ['Trident 24.02', ...],\n  operators: [{...}]\n}" },
+            { from: "web_backend", to: "web_frontend", label: "render audit report",
+              title: "Color-coded audit UI",
+              desc: "Frontend renders results — red for BLOCKERs, yellow for WARNINGs, green for OKs, plus a separate operator section.",
+              data: "🔴 BLOCKERS: 0\n🟡 WARNINGS: 1\n🟢 OK:       8 checks\n🤖 OPERATORS: 1 (postgres)" }
+          ]
+        },
+        {
+          id: "session-rollback", label: "Session Rollback", icon: "↩️",
+          steps: [
+            { from: "user", to: "web_frontend", label: "Sessions → Rollback",
+              title: "Browse session history",
+              desc: "Sessions page lists all auto-migration sessions from tracking/sessions/ with status, namespace, duration. User clicks Rollback on the target session.",
+              data: "GET /api/sessions\n→ list with status,\n   started_at, duration" },
+            { from: "web_frontend", to: "web_backend", label: "POST /sessions/{id}/rollback",
+              title: "Rollback request",
+              desc: "Frontend POSTs to the rollback endpoint after user confirms in a destructive-action modal.",
+              data: "POST /api/sessions/\n  20260513-app1-abc/rollback" },
+            { from: "web_backend", to: "tracking", label: "read rollback-NAMESPACE.sh",
+              title: "Locate the rollback script",
+              desc: "Backend reads tracking/sessions/<id>/rollback-NAMESPACE.sh — built incrementally during the original migration. Every change has a recorded undo.",
+              data: "tracking/sessions/abc/\n  rollback-my-app.sh:\n    # restore PV claimRefs\n    # scale workloads\n    # unpause operators\n    # delete dest PVCs" },
+            { from: "web_backend", to: "cutover", label: "execute rollback",
+              title: "Undo in reverse order",
+              desc: "Backend runs the rollback script. Each undo step is the inverse of an original migration step — PV claimRefs reverted, replicas restored, operators unpaused, destination PVCs deleted.",
+              data: "bash rollback-my-app.sh\n→ kubectl patch pv → original\n→ kubectl scale → original replicas\n→ patch postgrescluster\n   numberOfInstances=3\n→ delete dest PVCs" },
+            { from: "cutover", to: "kubernetes", label: "restore original state",
+              title: "Namespace fully restored",
+              desc: "PVs repointed to original PVCs, destination PVCs deleted, workloads back at original replicas, operators reconciling. Namespace is identical to its pre-migration state.",
+              data: "kubectl patch pv → original claimRef\nkubectl scale sts → original replicas\nkubectl delete pvc *-new\n✓ Namespace fully restored" }
+          ]
+        },
+        {
+          id: "post-cleanup", label: "Post-Migration Cleanup", icon: "🧹",
+          steps: [
+            { from: "user", to: "cli_make", label: "make list-deletable",
+              title: "Identify safe-to-delete PVCs",
+              desc: "After successful cutover and validation, user wants to reclaim source storage. Runs list-deletable to safely identify orphan PVCs.",
+              data: "make list-deletable NAMESPACE=my-app" },
+            { from: "cli_make", to: "cleanup", label: "list-deletable-pvcs.sh",
+              title: "Cross-reference workloads",
+              desc: "Script inspects all Deployments, StatefulSets, and VolumeClaimTemplates. Marks a PVC deletable only if no workload spec still references it.",
+              data: "→ data-pvc:     SAFE TO DELETE\n→ config-pvc:   SAFE TO DELETE\n→ data-pvc-new: IN USE (skip)" },
+            { from: "cleanup", to: "kubernetes", label: "kubectl get (read-only)",
+              title: "Verify no references remain",
+              desc: "Reads workload specs to confirm zero remaining volumeMount or volumeClaimTemplate references for each candidate PVC.",
+              data: "kubectl get deploy,sts -o json\n→ check .spec.volumes[]\n→ check .spec.volumeClaimTemplates[]\n→ check pod template .spec.volumes[]" },
+            { from: "user", to: "cli_make", label: "make delete-origin-pvcs",
+              title: "Confirm deletion",
+              desc: "User runs the delete target. CLI prompts for explicit y/N confirmation showing exactly which PVCs will be deleted.",
+              data: "make delete-origin-pvcs\n  NAMESPACE=my-app\n→ About to delete:\n   data-pvc, config-pvc\n→ Confirm? [y/N]" },
+            { from: "cli_make", to: "cleanup", label: "cleanup-origin-pvcs.sh",
+              title: "Delete jobs and PVCs",
+              desc: "Deletes migration Jobs and pods, then deletes original PVCs. If a PVC hangs on a finalizer, the script removes it.",
+              data: "→ kubectl delete job tp-migrate-*\n→ kubectl delete pvc data-pvc\n→ kubectl delete pvc config-pvc" },
+            { from: "cleanup", to: "kubernetes", label: "Trident frees ONTAP storage",
+              title: "Storage reclaimed",
+              desc: "With ReclaimPolicy=Delete, Trident deletes the underlying ONTAP volume. PVs transition Released → Deleted. Source storage is fully reclaimed.",
+              data: "kubectl delete pvc data-pvc\n→ Trident: DELETE ONTAP volume\n→ PV: Released → Deleted\n✓ Storage reclaimed" }
+          ]
+        }
+      ]
+    },
+    {
+      id: "setup", label: "Setup",
+      flows: [
+        {
+          id: "env-setup", label: "First-Time Setup", icon: "🔧",
+          steps: [
+            { from: "user", to: "cli_make", label: "make configure",
+              title: "Interactive wizard",
+              desc: "First-time setup. User runs `make configure` which launches configure-environment.sh.",
+              data: "make configure" },
+            { from: "cli_make", to: "env_config", label: "write .env",
+              title: "Persist all parameters",
+              desc: "configure-environment.sh writes complete .env at repo root.",
+              data: "ONTAP_MGMT_IP=192.168.122.11\nONTAP_USERNAME=admin\nSVM_NAME=nassvm\nAGGR_NAME=aggr1\nSOURCE_SC=nfs-legacy\nDEST_SC=netapp-nas" },
+            { from: "user", to: "cli_make", label: "make check",
+              title: "Verify prerequisites",
+              desc: "Validates tooling and connectivity before creating any infrastructure.",
+              data: "make check\n→ bash scripts/check-requirements.sh" },
+            { from: "cli_make", to: "pre_flight", label: "check-requirements.sh",
+              title: "Tool + cluster + Trident health",
+              desc: "kubectl available, cluster reachable, Trident pods Ready, source SC exists, RBAC permissions OK.",
+              data: "✓ kubectl v1.34\n✓ Cluster reachable\n✓ Trident 4/4 Running\n✓ SC nfs-legacy exists\n✓ RBAC: can create Jobs" },
+            { from: "user", to: "cli_make", label: "make infra",
+              title: "Create dest Backend + SC",
+              desc: "Creates the Trident TridentBackendConfig and StorageClass for the destination ONTAP backend.",
+              data: "make infra\n→ generate-infrastructure.sh\n→ kubectl apply -f infra.yaml" },
+            { from: "cli_make", to: "kubernetes", label: "apply Secret + Backend + SC",
+              title: "K8s resources created",
+              desc: "Three resources applied: Secret (ONTAP creds), TridentBackendConfig (SVM + aggregate), StorageClass.",
+              data: "Secret: trident-port-ontap-creds\nTridentBackendConfig:\n  svm: nassvm, aggr: aggr1\nStorageClass: netapp-nas" },
+            { from: "kubernetes", to: "ontap", label: "Trident → ONTAP REST",
+              title: "Backend goes online",
+              desc: "Trident operator picks up the new TridentBackendConfig, connects to ONTAP via REST API, validates SVM and aggregate, registers backend as online.",
+              data: "Trident → ONTAP REST API\n  GET /api/cluster (auth)\n  GET /api/storage/aggregates\n  GET /api/svm/svms\n✓ Backend online\n✓ 8.5 TiB available" }
+          ]
+        },
+        {
+          id: "license-activation", label: "License Activation", icon: "🔑",
+          steps: [
+            { from: "user", to: "web_frontend", label: "Settings → License",
+              title: "Current license state",
+              desc: "Settings page shows cluster fingerprint, current tier, migrations used. Token input field accepts the JWT.",
+              data: "GET /api/license\n→ tier: 'none'\n→ cluster_id: 'abc123def456'\n→ migrations_used: 0" },
+            { from: "web_frontend", to: "web_backend", label: "POST /api/license",
+              title: "Submit JWT token",
+              desc: "User pastes the JWT received from sales/vendor and clicks Activate.",
+              data: "POST /api/license\n{\n  token: 'eyJhbGciOiJSUzI1NiJ9...'\n}" },
+            { from: "web_backend", to: "lib_utils", label: "validate-license.py",
+              title: "RSA verify + cluster match",
+              desc: "Backend invokes validate-license.py which decodes the JWT using the embedded RSA public key (RS256), checks signature, expiry, cluster_id matches kube-system UID.",
+              data: "validate-license.py\n→ JWT decode (RS256)\n→ verify cluster_id ==\n   kube-system.metadata.uid\n→ check exp > now\n→ tier=plus, limit=null" },
+            { from: "lib_utils", to: "tracking", label: "HMAC ledger append",
+              title: "Anti-tamper usage record",
+              desc: "On successful validation the nonce is appended to tracking/.trident-port-usage — an HMAC-SHA256 ledger keyed by the cluster's kube-system UID.",
+              data: ".trident-port-usage:\n  HMAC-SHA256(\n    key  = sha256(kube-system.uid),\n    data = nonce + timestamp\n  )" },
+            { from: "web_backend", to: "web_frontend", label: "license activated",
+              title: "Tier unlocked",
+              desc: "Backend returns full license state. Frontend updates the Settings page showing tier badge, migration limit, expiry, cluster ID.",
+              data: "200 OK:\n{\n  valid: true,\n  tier: 'plus',\n  limit: null,\n  expires: '2027-05-13'\n}" }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+let activeFlow = null;
+let activeStep = 0;
+
+function init() {
+  renderArchitecture();
+  renderFlowPicker();
+  setupReveal();
+  setupKeyboard();
+  setupSwipe();
+  setupNavButtons();
+}
+
+function renderArchitecture() {
+  const grid = document.getElementById('arch-grid');
+  Object.entries(COMPONENTS).forEach(([id, c]) => {
+    const el = document.createElement('div');
+    el.className = `arch-card at-${c.type} reveal`;
+    el.innerHTML = `
+      <div class="ai">${c.icon}</div>
+      <div class="arch-text">
+        <div class="at">${c.label}</div>
+        <div class="ad">${c.sub}</div>
+        ${c.desc ? `<div class="aexpl">${c.desc}</div>` : ''}
+      </div>`;
+    grid.appendChild(el);
+  });
+}
+
+function renderFlowPicker() {
+  const picker = document.getElementById('flow-picker');
+  picker.innerHTML = '';
+  FLOWS_DATA.categories.forEach(cat => {
+    const label = document.createElement('div');
+    label.className = 'flow-category-label';
+    label.textContent = cat.label;
+    picker.appendChild(label);
+
+    const grid = document.createElement('div');
+    grid.className = 'flow-picker-grid';
+    cat.flows.forEach(flow => {
+      const btn = document.createElement('button');
+      btn.className = 'flow-card reveal';
+      btn.id = `fc-${flow.id}`;
+      btn.innerHTML = `
+        <span class="fci">${flow.icon}</span>
+        <div class="fct">${flow.label}</div>
+        <div class="fcm">${flow.steps.length} steps</div>`;
+      btn.addEventListener('click', () => selectFlow(flow));
+      grid.appendChild(btn);
+    });
+    picker.appendChild(grid);
+  });
+}
+
+function selectFlow(flow) {
+  document.querySelectorAll('.flow-card').forEach(c => c.classList.remove('active'));
+  document.getElementById(`fc-${flow.id}`).classList.add('active');
+
+  activeFlow = flow;
+  activeStep = 0;
+  document.getElementById('walker-empty').style.display = 'none';
+  document.getElementById('walker-active').style.display = 'block';
+
+  document.getElementById('wkr-icon').textContent = flow.icon;
+  document.getElementById('wkr-title-text').textContent = flow.label;
+
+  renderStep();
+  // Scroll walker into view reliably (accounting for sticky nav)
+  setTimeout(() => {
+    const walker = document.getElementById('walker');
+    const rect = walker.getBoundingClientRect();
+    const navHeight = 70;
+    const target = window.scrollY + rect.top - navHeight - 12;
+    window.scrollTo({ top: target, behavior: 'smooth' });
+  }, 80);
+}
+
+function renderStep() {
+  if (!activeFlow) return;
+  const step = activeFlow.steps[activeStep];
+  const total = activeFlow.steps.length;
+  const fromC = COMPONENTS[step.from];
+  const toC = COMPONENTS[step.to];
+
+  const prog = document.getElementById('wkr-progress');
+  prog.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'wpd' + (i < activeStep ? ' done' : i === activeStep ? ' cur' : '');
+    d.title = `Step ${i + 1}`;
+    d.addEventListener('click', () => { activeStep = i; renderStep(); });
+    prog.appendChild(d);
+  }
+
+  const content = document.getElementById('wkr-content');
+  content.innerHTML = `
+    <div class="step-num">STEP ${activeStep + 1} OF ${total}</div>
+    <div class="step-route">
+      <div class="route-node route-src">${fromC.icon}<span>${fromC.label}</span></div>
+      <div class="route-arrow"></div>
+      <div class="route-node route-dst">${toC.icon}<span>${toC.label}</span></div>
+    </div>
+    <div class="step-action">${step.label}</div>
+    <div class="step-title">${step.title}</div>
+    <div class="step-desc">${step.desc}</div>
+    <div>
+      <div class="step-data-label">Payload / Command</div>
+      <div class="step-data-code">${step.data}</div>
+    </div>`;
+
+  renderMiniDiagram(step);
+
+  document.getElementById('btn-prev').disabled = activeStep === 0;
+  const next = document.getElementById('btn-next');
+  next.disabled = activeStep === total - 1;
+  next.textContent = activeStep === total - 1 ? 'Done ✓' : 'Next →';
+}
+
+function renderMiniDiagram(step) {
+  const wrap = document.getElementById('minidiag');
+  wrap.innerHTML = '';
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.innerHTML = `
+    <defs>
+      <marker id="mar-arrow" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto">
+        <polygon points="0 0, 6 2.5, 0 5" fill="#0067C5"/>
+      </marker>
+    </defs>`;
+
+  const touched = new Set();
+  for (let i = 0; i <= activeStep; i++) {
+    touched.add(activeFlow.steps[i].from);
+    touched.add(activeFlow.steps[i].to);
+  }
+
+  Object.entries(COMPONENTS).forEach(([id, c]) => {
+    const el = document.createElement('div');
+    el.className = 'mini-comp';
+    if (id === step.from) el.classList.add('src');
+    else if (id === step.to) el.classList.add('dst');
+    else if (touched.has(id)) el.classList.add('touched');
+    else el.classList.add('dim');
+    el.style.left = c.mini.x + '%';
+    el.style.top  = c.mini.y + '%';
+    el.style.width = c.mini.w + '%';
+    el.style.height = c.mini.h + '%';
+    el.innerHTML = `<div class="mi">${c.icon}</div><div>${c.label.split(' ')[0]}</div>`;
+    el.title = c.label;
+    wrap.appendChild(el);
+  });
+
+  const f = COMPONENTS[step.from].mini;
+  const t = COMPONENTS[step.to].mini;
+  const sx = f.x + f.w / 2;
+  const sy = f.y + f.h / 2;
+  const tx = t.x + t.w / 2;
+  const ty = t.y + t.h / 2;
+  const mx = (sx + tx) / 2;
+  const my = (sy + ty) / 2 - 4;
+
+  const path = document.createElementNS(svgNS, 'path');
+  path.setAttribute('d', `M ${sx} ${sy} Q ${mx} ${my} ${tx} ${ty}`);
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', '#0067C5');
+  path.setAttribute('stroke-width', '0.7');
+  path.setAttribute('marker-end', 'url(#mar-arrow)');
+  path.setAttribute('opacity', '0.9');
+  path.setAttribute('stroke-dasharray', '1.8 1.2');
+  svg.appendChild(path);
+  wrap.appendChild(svg);
+}
+
+function goStep(delta) {
+  if (!activeFlow) return;
+  const next = activeStep + delta;
+  if (next < 0 || next >= activeFlow.steps.length) return;
+  activeStep = next;
+  renderStep();
+}
+
+function setupNavButtons() {
+  document.getElementById('btn-prev').addEventListener('click', () => goStep(-1));
+  document.getElementById('btn-next').addEventListener('click', () => goStep(1));
+}
+
+function setupKeyboard() {
+  document.addEventListener('keydown', e => {
+    if (!activeFlow) return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); goStep(1); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); goStep(-1); }
+  });
+}
+
+function setupSwipe() {
+  const walker = document.getElementById('walker');
+  let startX = 0, startY = 0, active = false;
+  walker.addEventListener('touchstart', e => {
+    if (!activeFlow) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    active = true;
+  }, { passive: true });
+  walker.addEventListener('touchend', e => {
+    if (!active) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      goStep(dx < 0 ? 1 : -1);
+    }
+    active = false;
+  }, { passive: true });
+}
+
+function setupReveal() {
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+}
+
+init();
+</script>
+</body>
+</html>
