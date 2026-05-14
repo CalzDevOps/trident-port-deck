@@ -1124,9 +1124,10 @@ footer .meta { color: var(--na-muted); }
         <p>Source PVCs are mounted read-write (your app keeps using them). A Kubernetes Job mounts the same PVCs in a copy pod and streams data to the destination:</p>
         <ul>
           <li><b>Filesystem PVCs</b> → rsync (preserves perms, ACLs, sparse files, hardlinks).</li>
-          <li><b>Block PVCs</b> → dd from /dev/source to /dev/dest + SHA-256 spot-check.</li>
+          <li><b>Block PVCs</b> (<code>volumeMode: Block</code>, raw device) → dd from /dev/source to /dev/dest + SHA-256 spot-check.</li>
         </ul>
         <p>This phase takes minutes to hours depending on data volume. The app sees zero impact — it does not even know this is happening.</p>
+        <p><b>Note on driver vs. mode.</b> What decides the copy strategy is <code>spec.volumeMode</code>, not the underlying provisioner. A SAN/iSCSI/RBD PVC mounted as <code>Filesystem</code> (formatted ext4/xfs by the CSI driver) takes the rsync path — exactly like an NFS PVC. Only raw block devices (<code>volumeMode: Block</code>) take the dd path. Access mode (RWO/RWX) is irrelevant to this choice.</p>
       </div>
     </div>
 
@@ -1140,6 +1141,7 @@ footer .meta { color: var(--na-muted); }
           <li><b>External pod mode.</b> A standalone rsync pod mounts both PVCs in <i>ReadOnlyMany</i> for source (or shares the volume in RWX). Used when the workload <b>cannot be patched</b>: immutable operators, ReadOnlyRootFilesystem, security policies blocking sidecars, or read-mostly workloads where injecting a sidecar would be more disruptive than running externally.</li>
         </ul>
         <p>Both modes converge on the same goal: keep the destination PVC within seconds of the source until the operator clicks cutover.</p>
+        <p><b>Filesystem only.</b> Incremental sync uses rsync + inotifywait, which require a mounted filesystem to walk. It works for <b>any</b> PVC with <code>volumeMode: Filesystem</code> — NFS, SAN/iSCSI, RBD, local-path, Longhorn, anything — regardless of provisioner or access mode. Raw <code>volumeMode: Block</code> PVCs cannot be continuously synced this way: they take the classic path — full dd copy followed directly by the cutover window, with no rolling delta phase. Live-sync explicitly skips Block PVCs and points the user at <code>migrate-batch</code> instead.</p>
       </div>
     </div>
 
