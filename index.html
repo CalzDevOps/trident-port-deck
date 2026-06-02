@@ -1072,8 +1072,8 @@ footer .meta { color: var(--na-muted); }
   <div class="timeline">
     <div class="tl-item reveal">
       <div class="tl-version">v0.1  ·  Origin</div>
-      <div class="tl-title">The INCIBE migration: 40+ namespaces, 500+ PVCs</div>
-      <div class="tl-desc">Spanish customer needs to move every PVC in their cluster from ONTAP FlexVol to ONTAP Qtree — 40+ namespaces, 500+ PVCs. Manual approach for the first few: stop apps, rsync per PVC, swap PV claimRef, restart. It works for one or two namespaces. At scale, it's a nightmare. This is where the toolkit starts.</div>
+      <div class="tl-title">The first large migration: 40+ namespaces, 500+ PVCs</div>
+      <div class="tl-desc">A customer needs to move every PVC in their cluster from ONTAP FlexVol to ONTAP Qtree — 40+ namespaces, 500+ PVCs. Manual approach for the first few: stop apps, rsync per PVC, swap PV claimRef, restart. It works for one or two namespaces. At scale, it's a nightmare. This is where the toolkit starts.</div>
     </div>
     <div class="tl-item reveal">
       <div class="tl-version">v0.3  ·  Generalization</div>
@@ -1103,7 +1103,7 @@ footer .meta { color: var(--na-muted); }
     <div class="tl-item reveal">
       <div class="tl-version">Today  ·  Production toolkit</div>
       <div class="tl-title">Commercial-grade, licensed, hardened</div>
-      <div class="tl-desc">JWT licensing tied to cluster fingerprint, HMAC-resistant usage ledger, 152/155 passing tests, three tiers (Base / Plus / Premium). Battle-tested at INCIBE — almost every namespace had at least one operator running, and the GitLab namespace held a single 500 GB volume that had to move cleanly. It did.</div>
+      <div class="tl-desc">JWT licensing tied to cluster fingerprint, HMAC-resistant usage ledger, 152/155 passing tests, three tiers (Base / Plus / Premium). Battle-tested in production — almost every namespace had at least one operator running, and one namespace held a single 500 GB volume that had to move cleanly. It did.</div>
     </div>
   </div>
 </section>
